@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NevaTrip</title>
+    <style type="text/css">
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<form>
+    <label for="route">Выберите направление</label>
+    <select name="route" id="route">
+        <option selected="selected" value=""></option>
+        <option value="из A в B">из A в B</option>
+        <option value="из B в A">из B в A</option>
+        <option value="из A в B и обратно в А">из A в B и обратно в А</option>
+    </select>
+    <fieldset id="timeField" class="hidden">
+    <label for="time">Выберите время отправления</label>
+    <select name="time" id="time"></select>
+    </fieldset>
+
+    <fieldset id="timeFieldBack" class="hidden">
+        <label for="timeBack">Выберите время отправления в обратную сторону</label>
+        <select name="timeBack" id="timeBack"></select>
+    </fieldset>
+</form>
+
+<label for="num">Количество билетов</label>
+<input type="text" id="num" placeholder="введите количество билетов">
+<button  onclick="quantity()">Посчитать</button>
+
+<p id="result"></p>
+
+<script>
+    let departureAB = ['18:00', '18:30','18:45','19:00','19:15','21:00'];
+    let departureBA = ['18:30','18:45','19:00','19:15','19:35','21:50','21:55'];
+
+    var direction;
+    var price = 700;
+    let userDate = new Date;
+    var way = 50;
+
+    if (userDate.getTimezoneOffset() !== -180){
+        let userDepartureAB = [];
+        let userdepartureBA = [];
+        departureAB.forEach(function(item) {
+            userDepartureAB.push(normalizeDate(item).toLocaleTimeString().slice(0,-3));
+        });
+        departureBA.forEach(function(item) {
+            userdepartureBA.push(normalizeDate(item).toLocaleTimeString().slice(0,-3));
+        });
+        departureAB = userDepartureAB;
+        departureBA = userdepartureBA;
+    }
+
+    function normalizeDate(time){
+        let date = new Date;
+        const arr = time.split(':');
+        date.setHours(arr[0]);
+        date.setMinutes(arr[1]);
+        return date;
+    }
+
+    function compareDates(date1,date2){
+        return normalizeDate(date1) > normalizeDate(date2);
+    }
+
+    const route = document.getElementById("route");
+    route.addEventListener('change', event => {
+        document.getElementById("timeField").classList.remove("hidden");
+        document.getElementById("timeFieldBack").classList.add("hidden");
+
+        let timeAB = '<option selected="selected" value=""></option>';
+        departureAB.forEach(function(item) {
+            timeAB += '<option value="'+item+'">' + item +'</option>\n';
+        })
+
+        let timeBA = '<option selected="selected" value=""></option>';
+        departureBA.forEach(function(item) {
+            timeBA += '<option value="'+item+'">' + item +'</option>\n';
+        })
+        this.direction = route.value;
+
+        if (route.value == "из A в B"){
+            document.getElementById("time").innerHTML = timeAB;
+        } else if(route.value == "из B в A"){
+            document.getElementById("time").innerHTML = timeBA;
+        } else if(route.value == "из A в B и обратно в А"){
+            price = 1200;
+            let arrivings = [];
+            let timeABBA = '<option selected="selected" value=""></option>';
+            departureAB.forEach(function(item) {
+                const arr = item.split(':');
+                if (arr[1] < 10){
+                    arr[1]= +arr[1] + this.way;
+                } else{
+                    arr[0] ++;
+                    arr[1]= +arr[1] + (60 - this.way);
+                }
+                item = arr[0] + ':' + arr[1];
+                arrivings.push(item);
+            });
+
+            document.getElementById("timeFieldBack").classList.remove("hidden");
+            document.getElementById("time").innerHTML = timeAB;
+            const departure = document.getElementById("time");
+
+            departure.addEventListener('change', event => {
+                this.departureAt = document.getElementById("time").value;
+                arrivings.forEach(function(item) {
+                    if (compareDates(item,this.departureAt)){
+                        timeABBA += '<option value="'+item+'">' + item +'</option>\n';
+                        document.getElementById("timeBack").innerHTML = timeABBA;
+                    }
+                })
+            })
+
+            this.way = '1 час 40';
+        }
+    });
+
+    function quantity(){
+        const quantity = document.getElementById("num").value;
+        const departureAt = document.getElementById("time").value;
+       const departureBack = document.getElementById("timeBack").value;
+        if (!departureBack){
+            var arr = departureAt.split(':');
+        }else{
+            var arr = departureBack.split(':');
+        }
+        if (arr[1] < 10){
+            arr[1]= +arr[1] + 50;
+        } else{
+            arr[0] ++;
+            arr[1]= +arr[1] - 10;
+            if (arr[1] == 60){
+                arr[0] ++;
+                arr[1] = '00';
+            }
+        }
+        const arrivingAt = arr[0] + ':' + arr[1];
+
+
+        const result = document.getElementById("result");
+        result.innerText = 'Вы выбрали '+ quantity +' билета по маршруту '+ this.direction +' стоимостью '+ this.price + 'р.\n' +
+            '            Это путешествие займет у вас ' + way + 'минут.\n' +
+            '            Теплоход отправляется в ' + departureAt + ', а прибудет в ' + arrivingAt +'.'
+
+    }
+
+
+</script>
+
+</body>
+</html>
